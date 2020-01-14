@@ -1,0 +1,10 @@
+{
+  "development": {
+    "username": "neo4j",
+    "password": "test",
+    "neo4j": "bolt://neo4j:7687",
+    "base_url": "http://neo4j",
+    "api_path": "/api/v1",
+    "jwtKey": "TestJwt"
+  }
+}

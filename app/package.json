@@ -1,0 +1,15 @@
+{
+  "name": "amazingco",
+  "version": "1.0.0",
+  "description": "Interview question for Tradeshift",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Eli Taylor",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "neo4j-driver": "^4.0.1"
+  }
+}

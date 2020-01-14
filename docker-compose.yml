@@ -1,0 +1,27 @@
+##docker-compose.yml
+version: '3'
+services:
+  neo4j:
+    image: neo4j:3.5
+    ports:
+      - "3306:7474"
+      - "7687:7687"
+    volumes:
+      - ./db/dbms:/data/dbms
+    env_file:
+      - dev.env
+
+  app:
+    image: node:13
+    volumes: 
+      - ./app:/app
+    depends_on:
+      - neo4j
+    links: 
+      - neo4j
+    ports: 
+      - "80:3000"
+    working_dir: /app
+    restart: always
+    entrypoint: node app.js 
+
