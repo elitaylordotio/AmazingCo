@@ -20,11 +20,23 @@ app.get("/", (req, res) => {
 
 app.get(`/api/getNode`, async (req: any, res) => {
 
-        db.getAllNodes().then((result) => {
-            res.send(result.records);
-        }).catch((error) => {
-            res.send(error);
-        });
+    db.getAllNodes().then((result) => {
+        res.send(result.records);
+    }).catch((error) => {
+        res.send(error);
+    });
+
+});
+
+app.post(`/api/swap`, async (req: any, res) => {
+    const child = req.param("childNode");
+    const parent = req.param("newParentNode");
+
+    db.swapParentNode(child, parent).then((result) => {
+        res.send(result.records);
+    }).catch((error) => {
+        res.send(error);
+    });
 
 });
 

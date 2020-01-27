@@ -25,19 +25,32 @@ export class DBWrapper {
             return result;
         });
     }
+    /// Finding everything under a node
+//     MATCH (parent:Node { name:"3" })-[:HAS_CHILD *0..]->(child: Node)
+// RETURN child
 
-    private getRootNode(): Promise<QueryResult> {
-        const query = "MATCH (r:Node) WHERE NOT (r)-[:HAS_PARENT]-() RETURN r.name AS name";
-        return this.session.readTransaction((transaction) => {
-            const result = transaction.run(query);
-            return result;
-        });
-    }
+    public swapParentNode(childNode: string, newParentNode: string): Promise<QueryResult> {
 
-    private getDistance(startNode: string, endNode: string): Promise<QueryResult> {
-        const query = "MATCH (a:Node { name: $startNode }),(b:Node { name: $endNode}), p = shortestPath((a)-[*..15]-(b)) RETURN length(p)";
+        const query = "MATCH (newParentNode:Node) \
+        WHERE newParentNode.name = $newParentNode \
+        MATCH (childNode:Node) \
+        WHERE childNode.name = $childNode \
+        MATCH (oldParentNode:Node) \
+        WHERE (oldParentNode)-[:HAS_CHILD]->(childNode) \
+        MATCH (oldParentNode)-[childRelation:HAS_CHILD]->(childNode) \
+        MATCH (childNode)-[parentRelation:HAS_PARENT]->(oldParentNode) \
+        DELETE childRelation \
+        DELETE parentRelation \
+        CREATE (newParentNode)-[:HAS_CHILD]->(childNode) \
+        CREATE (childNode)-[:HAS_PARENT]->(newParentNode) \
+        SET childNode.height = (newParentNode.height + 1) \
+        WITH childNode \
+        MATCH path = (childNode)-[:HAS_CHILD *1..]->(child: Node) \
+        SET child.height = (length(path) + childNode.height) \
+        WITH childNode \
+        RETURN childNode";
         return this.session.readTransaction((transaction) => {
-            const result = transaction.run(query, { startNode, endNode });
+            const result = transaction.run(query, { childNode, newParentNode });
             return result;
         });
     }
@@ -50,10 +63,8 @@ export class DBWrapper {
 
         for (let i = 1; i < size; i++) {
             const parentNode = (Math.floor(Math.random() * (i))).toString();
-            promiseArray.push(() => this.createNodeWithRelationship(i.toString(), parentNode).then((result) => {
-                // tslint:disable-next-line:no-console
-                console.log(result);
-            }));
+            // tslint:disable-next-line: no-empty
+            promiseArray.push(() => this.createNodeWithRelationship(i.toString(), parentNode));
         }
 
         for (const promise of promiseArray) {
@@ -72,13 +83,9 @@ export class DBWrapper {
     private createNodeWithRelationship(nodeName: string, parentName: string): Promise<QueryResult> {
         const query = "MATCH (parentNode:Node) \
         WHERE parentNode.name = $parentName \
-        CREATE (newNode:Node {name: $nodeName})-[:HAS_PARENT]->(parentNode) \
+        CREATE (newNode:Node {name: $nodeName, height: (parentNode.height + 1)})-[:HAS_PARENT]->(parentNode) \
         CREATE (parentNode)-[r:HAS_CHILD]->(newNode) \
         WITH newNode \
-        MATCH (root:Node) \
-        WHERE NOT (root)-[:HAS_PARENT]-() \
-        WITH newNode \
-        MATCH p = shortestPath((newNode)-[*]-(root)) \
         RETURN newNode";
         return this.session.writeTransaction((transaction) => {
             const result = transaction.run(query, { nodeName, parentName });
