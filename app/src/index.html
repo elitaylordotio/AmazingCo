@@ -1,0 +1,125 @@
+<html>
+    <head>
+        <title>Tree</title>
+        <style type="text/css">
+            #viz {
+                width: 900px;
+                height: 700px;
+            }
+        </style>
+        <script src="https://rawgit.com/neo4j-contrib/neovis.js/master/dist/neovis.js"></script>
+    </head>   
+    <script>
+        let viz;
+        function draw() {
+            var config = {
+                container_id: "viz",
+                server_url: "bolt://localhost:7687",
+                server_user: "neo4j",
+                server_password: "test",
+                labels: {
+                    "Node": {
+                        "caption": "name",
+                        "community": "height",
+                    }
+                },
+                relationships: {
+                    "HAS_PARENT": {
+                        "thickness": "weight",
+                        "caption": false
+                    },
+                    "HAS_CHILD": {
+                        "thickness": "weight",
+                        "caption": false
+                    }
+                },
+                initial_cypher: "MATCH p = (:Node)-[:HAS_PARENT]->(:Node) \
+                                 RETURN (p)"
+            }
+
+            viz = new NeoVis.default(config);
+            viz.render();
+        }
+
+        function showAll(){
+            viz.renderWithCypher("MATCH p = (:Node)-[:HAS_PARENT]->(:Node) \
+                                 RETURN (p)")
+        }
+
+        function showSection(){
+            let showFromParent = (document.getElementById('showFromParent').value).toString();
+            let query = `MATCH p = (parent:Node { name: "${showFromParent}" })-[:HAS_CHILD *0..]->(child: Node) \
+                                 RETURN (p)`;
+
+            viz.renderWithCypher(query)
+        }
+
+        function reload(){
+            viz.reload();
+        }
+
+        function swap(){
+            let childNode = (document.getElementById('nodeToSwap').value).toString();
+            let newParentNode = (document.getElementById('newParent').value).toString();
+
+            if(childNode === "0"){
+                alert("Can't swap root");
+            }
+
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", `http://${window.location.host}/api/swap`, false);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function() {//Call a function when the state changes.
+                if(xhr.readyState == 4 && xhr.status == 200) {
+                    reload();
+                }
+            }
+            xhr.send(JSON.stringify({
+                childNode: childNode,
+                newParentNode: newParentNode
+            }));
+        }
+
+        function createTree(){
+            let size = (document.getElementById('size').value).toString();
+
+            let xhr = new XMLHttpRequest();
+            xhr.open("POST", `http://${window.location.host}/api/createTree`, false);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function() {//Call a function when the state changes.
+                if(xhr.readyState == 4 && xhr.status == 200) {
+                    reload();
+                }
+            }
+            xhr.send(JSON.stringify({
+                size: size
+            }));
+        }
+    </script>
+    <body onload="draw()">
+        <div id="viz"></div>
+
+        <br/>
+        <div style="display:flex;">
+            <label>Node to swap:</label>
+            <input id="nodeToSwap" type="number">
+            <label>New Parent:</label>
+            <input id="newParent" type="number">
+            <button onclick="swap()">Swap</button>
+        </div>
+        <div style="display:flex;">
+            <label>Display from parent:</label>
+            <input id="showFromParent" type="number">
+            <button onclick="showSection()">Show Section</button>
+        </div>
+        <br/>
+        <div style="display:flex;">
+            <label>Create Tree Size:</label>
+            <input id="size" type="number">
+            <button onclick="createTree()">Show Section</button>
+        </div>
+        <br/>
+        <button onclick="showAll()">Show All</button>
+        <button onclick="reload()">Reload</button>
+    </body>
+</html>

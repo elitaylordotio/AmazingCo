@@ -4,7 +4,7 @@
   "description": "Interview question for Tradeshift",
   "main": "dist/index.js",
   "scripts": {
-    "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
+    "prebuild": "tslint -c tslint.json -p tsconfig.json --fix && cp src/index.html dist/ && cp .env dist/",
     "build": "tsc",
     "postbuild": "cp package.json dist/package.json && cd dist && npm install --only=production",
     "prestart": "npm run build",

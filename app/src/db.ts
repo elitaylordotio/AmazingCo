@@ -9,7 +9,7 @@ export class DBWrapper {
 
     constructor(username: string, password: string, dbUrl: string) {
 
-        this.driver = neo4j.driver("bolt://localhost:7687", neo4j.auth.basic("neo4j", "test"));
+        this.driver = neo4j.driver("bolt://neo4j:7687", neo4j.auth.basic("neo4j", "test"));
         // this.driver = neo4j.driver(dbUrl, neo4j.auth.basic(username, password));
         this.session = this.driver.session();
 
@@ -19,18 +19,24 @@ export class DBWrapper {
 
     public getAllNodes(): Promise<QueryResult> {
 
-        const query = "MATCH (n:Node) RETURN (n)";
+        const query = "MATCH p = (:Node)-[:HAS_PARENT]->(:Node)";
         return this.session.readTransaction((transaction) => {
             const result = transaction.run(query);
             return result;
         });
     }
-    /// Finding everything under a node
-//     MATCH (parent:Node { name:"3" })-[:HAS_CHILD *0..]->(child: Node)
-// RETURN child
+
+    public getSection(nodeName: string): Promise<QueryResult> {
+
+        const query = "MATCH (parent:Node { name: $nodeName })-[:HAS_CHILD *0..]->(child: Node) \
+        RETURN child";
+        return this.session.readTransaction((transaction) => {
+            const result = transaction.run(query, { nodeName });
+            return result;
+        });
+    }
 
     public swapParentNode(childNode: string, newParentNode: string): Promise<QueryResult> {
-
         const query = "MATCH (newParentNode:Node) \
         WHERE newParentNode.name = $newParentNode \
         MATCH (childNode:Node) \
@@ -55,7 +61,7 @@ export class DBWrapper {
         });
     }
 
-    private async createTree(size: number): Promise<any> {
+    public async createTree(size: number): Promise<any> {
 
         const promiseArray = [];
         promiseArray.push(() => this.clearAll());
